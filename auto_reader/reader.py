@@ -1,6 +1,7 @@
 import configparser
 import json
 import re
+from datetime import datetime, timedelta
 
 import requests
 
@@ -26,26 +27,20 @@ def get_unread_feeds(client: FeedlyClient):
 
 
 def get_unread_entries(client: FeedlyClient, feed: str):
-    url = client._get_endpoint('v3/streams/ids')
-    params = dict(streamId=feed, unreadOnly=True)
-    headers = {
-        'Authorization': 'OAuth ' + FEEDLY_TOKEN
-    }
-    res = requests.get(url=url,
-                       params=json.dumps(params),
-                       headers=headers)
-    print(url)
-    print(res)
-
-    res = client.get_feed_content(streamId=feed, unreadOnly=True)
-    print(res)
+    entries = client.get_feed_content(access_token=FEEDLY_TOKEN, streamId=feed, unreadOnly=True)
+    ids = []
+    for e in entries['items']:
+        if e['published'] < (datetime.now() - timedelta(days=2)).timestamp() * 1e3:
+            ids.append(e['id'])
+            print("Starszy: " + e["title"])
+    if len(ids) > 0:
+        client.mark_article_read(FEEDLY_TOKEN, ids)
 
 
 if __name__ == '__main__':
     ini = configparser.ConfigParser()
     ini.read('config.ini')
-    FEEDLY_TOKEN = ini['FEEDLY_USER']['token' \
-                                      '']
+    FEEDLY_TOKEN = ini['FEEDLY_USER']['token']
     fclient = FeedlyClient(sandbox=False)
     print(get_unread_feeds(fclient))
-    #get_unread_entries(fclient, 'feed/http://art-of-software.blogspot.com/feeds/posts/default')
+    # get_unread_entries(fclient, 'feed/http://planet.python.org/rss20.xml')
