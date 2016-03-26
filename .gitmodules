@@ -1,0 +1,3 @@
+[submodule "FeedlyClient"]
+	path = FeedlyClient
+	url = https://github.com/lukasszz/FeedlyClient.git
