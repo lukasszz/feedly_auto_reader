@@ -13,7 +13,7 @@ def json_fetch(url, method, params={}, data={}, headers={}):
     return response.json()
 
 
-class FeedlyClient(object):
+class FeedlyClient1(object):
     def __init__(self, **options):
         self.client_id = options.get('client_id')
         self.client_secret = options.get('client_secret')

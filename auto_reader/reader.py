@@ -1,15 +1,13 @@
 import configparser
-import json
 import re
 from datetime import datetime, timedelta
 
-import requests
 
-from auto_reader.client import FeedlyClient
+from FeedlyClient.client import FeedlyClient
 
 
 def get_unread_feeds(client: FeedlyClient):
-    counts = client.get_info_type(FEEDLY_TOKEN, 'counts')
+    counts = client.get_counts(FEEDLY_TOKEN)
     counts = counts['unreadcounts']
     feeds = []
     for f in counts:
@@ -26,15 +24,13 @@ def get_unread_feeds(client: FeedlyClient):
     return feeds
 
 
-def get_unread_entries(client: FeedlyClient, feed: str):
-    entries = client.get_feed_content(access_token=FEEDLY_TOKEN, streamId=feed, unreadOnly=True)
-    ids = []
+def get_unread_entries(client: FeedlyClient, feed: str, entries_older_than):
+    entries = client.get_feed_content(FEEDLY_TOKEN, feed)
+    old_entries = []
     for e in entries['items']:
-        if e['published'] < (datetime.now() - timedelta(days=2)).timestamp() * 1e3:
-            ids.append(e['id'])
-            print("Starszy: " + e["title"])
-    if len(ids) > 0:
-        client.mark_article_read(FEEDLY_TOKEN, ids)
+        if e['published'] < (datetime.now() - timedelta(days=entries_older_than)).timestamp() * 1e3:
+            old_entries.append(e)
+    return old_entries
 
 
 if __name__ == '__main__':
@@ -42,5 +38,8 @@ if __name__ == '__main__':
     ini.read('config.ini')
     FEEDLY_TOKEN = ini['FEEDLY_USER']['token']
     fclient = FeedlyClient(sandbox=False)
-    print(get_unread_feeds(fclient))
-    # get_unread_entries(fclient, 'feed/http://planet.python.org/rss20.xml')
+    #    print(get_unread_feeds(fclient))
+    old_entries = get_unread_entries(fclient, 'feed/http://planet.python.org/rss20.xml', ini['AUTOREADER']['entries_older_than'])
+
+    # if len(ids) > 0:
+    #     client.mark_article_read(FEEDLY_TOKEN, ids)
