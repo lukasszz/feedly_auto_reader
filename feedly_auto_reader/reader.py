@@ -1,13 +1,13 @@
 import configparser
 import re
 from datetime import datetime, timedelta
-
+import logging
 
 from FeedlyClient.client import FeedlyClient
 
 
 def get_unread_feeds(client: FeedlyClient):
-    counts = client.get_counts(FEEDLY_TOKEN)
+    counts = client.get_counts(client.token)
     counts = counts['unreadcounts']
     feeds = []
     for f in counts:
@@ -27,22 +27,38 @@ def get_unread_feeds(client: FeedlyClient):
 def get_unread_entries(client: FeedlyClient, feeds: list, entries_older_than: int):
     old_entries = []
     for feed in feeds:
-        entries = client.get_feed_content(FEEDLY_TOKEN, feed['id'])
+        entries = client.get_feed_content(client.token, feed['id'])
         for e in entries['items']:
             if e['published'] < (datetime.now() - timedelta(days=entries_older_than)).timestamp() * 1e3:
                 old_entries.append(e)
     return old_entries
 
 
+def mark_entries_read(entries: [], client: FeedlyClient, ):
+    logger = logging.getLogger('read')
+    fh = logging.FileHandler('read.log')
+    formatter = logging.Formatter('%(asctime)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    logger.setLevel(logging.INFO)
+
+    if len(entries) == 0:
+        logger.info("No old arctiles to mark as read")
+
+    ids = []
+    for e in entries:
+        ids.append(e['id'])
+        logger.info('%s %s', e['title'], e['originId'])
+
+    client.mark_article_read(client.token, ids)
+
+
 if __name__ == '__main__':
     ini = configparser.ConfigParser()
     ini.read('config.ini')
-    FEEDLY_TOKEN = ini['FEEDLY_USER']['token']
-    fclient = FeedlyClient(sandbox=False)
+    fclient = FeedlyClient(sandbox=False, token=ini['FEEDLY_USER']['token'])
     feeds = get_unread_feeds(fclient)
     old_entries = get_unread_entries(fclient, feeds, int(ini['AUTO_READER']['entries_older_than']))
+    mark_entries_read(old_entries, fclient)
 
-    print(old_entries)
 
-    # if len(ids) > 0:
-    #     client.mark_article_read(FEEDLY_TOKEN, ids)
