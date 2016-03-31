@@ -54,13 +54,3 @@ def _logger_setup():
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     logger.setLevel(logging.INFO)
-
-
-if __name__ == '__main__':
-    _logger_setup()
-    ini = configparser.ConfigParser()
-    ini.read('config.ini')
-    fclient = FeedlyClient(sandbox=False, token=ini['FEEDLY_USER']['token'])
-    feeds = get_unread_feeds(fclient)
-    old_entries = get_unread_entries(fclient, feeds, int(ini['AUTO_READER']['entries_older_than']))
-    mark_entries_read(old_entries, fclient)
