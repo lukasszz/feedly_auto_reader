@@ -17,8 +17,9 @@ def get_unread_feeds(client: FeedlyClient):
         if r.match(f['id']):
             continue
 
-        r = re.compile(r'feed/http://(.*?)/')
+        r = re.compile(r'feed/https?://(.*?)/')
         f['title'] = r.findall(f['id'])[0]
+        print(f['title'])
         feeds.append(f)
 
     return feeds
