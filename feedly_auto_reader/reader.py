@@ -1,7 +1,6 @@
-import configparser
+import logging
 import re
 from datetime import datetime, timedelta
-import logging
 
 from FeedlyClient.client import FeedlyClient
 
@@ -17,12 +16,22 @@ def get_unread_feeds(client: FeedlyClient):
         if r.match(f['id']):
             continue
 
-        r = re.compile(r'feed/https?://(.*?)/')
-        f['title'] = r.findall(f['id'])[0]
-        print(f['title'])
+        f['title'] = _build_title(f['id'])[0]
+        r.findall(f['id'])
         feeds.append(f)
 
     return feeds
+
+
+def _build_title(feed_id):
+    prefixes = ['feeds\.feedburner\.com/', 'www\.', 'rss\.']
+    remove_prefix = ''
+    for p in prefixes:
+        remove_prefix += '(?:' + p + ')?'
+
+    r = re.compile(r'feed/https?://' + remove_prefix + '([^/]*)')
+    g = r.findall(feed_id)
+    return g[0]
 
 
 def get_unread_entries(client: FeedlyClient, feeds: list, entries_older_than: int):
@@ -30,7 +39,7 @@ def get_unread_entries(client: FeedlyClient, feeds: list, entries_older_than: in
     for feed in feeds:
         entries = client.get_feed_content(client.token, feed['id'])
         for e in entries['items']:
-            if e['published'] < (datetime.now() - timedelta(days=entries_older_than)).timestamp() * 1e3:
+            if e['published'] < (datetime.now() - timedelta(days=entries_older_than)).timestamp()*1e3:
                 old_entries.append(e)
     return old_entries
 
